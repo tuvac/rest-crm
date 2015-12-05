@@ -110,12 +110,12 @@ UserSchema.methods.authenticate = Promise.method(function(token) {
 
 /**
  * Create a JWT user token
- * @function getToken
+ * @function createToken
  * @memberof module:User
  * @instance
  * @return {string} - the encoded user token
  */
-UserSchema.methods.getToken = Promise.method(function() {
+UserSchema.methods.createToken = Promise.method(function() {
 
     if (this.isNew) {
 
@@ -123,7 +123,7 @@ UserSchema.methods.getToken = Promise.method(function() {
     }
 
     var token = jwt.sign(this, 'secret-key', {
-        expiresInMinutes: 1440 // expires in 24 hours
+        expiresIn: 86400 // expires in 24 hours
     });
 
     return token;

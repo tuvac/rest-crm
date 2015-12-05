@@ -2,7 +2,9 @@ var mongoose = require('mongoose'),
     assert = require('assert'),
     User = require('../models/user'),
     bcrypt = require('bcrypt'),
-    salt = bcrypt.genSaltSync(10);
+    salt = bcrypt.genSaltSync(10),
+    jwt = require('jsonwebtoken'),
+    Promise = require('bluebird');
 
 mongoose.connect('mongodb://localhost/rest-crm');
 
@@ -25,7 +27,7 @@ describe('User', function() {
             done();
         }).catch(done);
     });
-    
+
 
     afterEach(function(done) {
 
@@ -173,13 +175,13 @@ describe('User', function() {
 
     });
 
-    describe('#getToken', function() {
+    describe('#createToken', function() {
 
     	it('Should throw an error if we attempt to get a token for an unsaved user', function(done) {
 
     		var user = new User({username: 'another@test.com', passowrd: '123456', roles: ['USER']});
 
-    		user.getToken()
+    		user.createToken()
 
     			.then(done)
 
@@ -192,7 +194,24 @@ describe('User', function() {
     			.done(done);
     	});
 
-    	//it('Should ');
+    	it('Should create a token for the user', function(done) {
+
+            var usr = User.login('someone@onthe.net', 'test1234'),
+                token = usr.then(function(u) {
+
+                    return u.createToken();
+                });
+
+                Promise.join(usr, token, function(usr, token) {
+
+                    var decoded = jwt.verify(token, 'secret-key');
+                    assert.equal(decoded._id, usr._id);
+                    assert.equal(decoded.username, usr.username);
+                    done();
+                })
+                .catch(done);
+                //.done(done);
+        });
     });
 
 });
