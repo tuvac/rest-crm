@@ -4,7 +4,7 @@ var mongoose = require('mongoose'),
     bcrypt = require('bcrypt'),
     salt = bcrypt.genSaltSync(10);
 
-mongoose.connect('mongodb://localhost/rest-crm-test');
+mongoose.connect('mongodb://localhost/rest-crm');
 
 
 describe('User', function() {
@@ -12,7 +12,7 @@ describe('User', function() {
 
     beforeEach(function(done) {
 
-        this.timeout(5000);
+        this.timeout(2000);
 
         var password = bcrypt.hashSync('test1234', salt);
 
@@ -25,10 +25,11 @@ describe('User', function() {
             done();
         }).catch(done);
     });
+    
 
     afterEach(function(done) {
 
-        this.timeout(5000);
+        this.timeout(10000);
 
         mongoose.connection.db.dropDatabase(function(err) {
             done(err);
@@ -39,14 +40,15 @@ describe('User', function() {
 
         it('Should save a user with a default role', function(done) {
 
-            var user = new User();
+            var user = new User({username: 'test@test.net', password: 'test1234'});
 
-            user.register('test@test.net', 'test1234')
+            user.register()
 
-            .then(function(user) {
+                .then(function(user) {
 
                     assert.ok(user.id);
                     assert.equal(user.roles.length, 1);
+                    assert.ok(bcrypt.compareSync('test1234', user.password));
                     assert.equal(user.roles[0], 'USER');
                     done();
                 })
@@ -59,19 +61,20 @@ describe('User', function() {
 
         it('Should save a user with set roles', function(done) {
 
-            var user = new User();
+            var user = new User({username: 'test@test.net', password: 'test1234'});
 
-            user.register('test@test.com', 'test1234', ['ADMIN', 'USER'])
+            user.register(['ADMIN', 'USER'])
 
             	.then(function(user) {
 
                     assert.ok(user.id);
                     assert.equal(user.roles.length, 2);
+                    assert.ok(bcrypt.compareSync('test1234', user.password));
                     assert.equal(user.roles[0], 'ADMIN');
                     assert.equal(user.roles[1], 'USER');
                     done();
                 })
-                
+
                 .catch(function() {
 
                     console.log(err);
@@ -89,120 +92,107 @@ describe('User', function() {
             var user = new User();
 
             user.roles.push('ADMIN');
-            
+
             var count = 0;
-            
+
             user.hasRole('USER')
-			
+
 				.then(function(u) {
-			
+
 					assert.ok(false);
 				})
-			
+
 				.catch(function(err) {
-				
+
 					count++;
 					assert.ok(true);
-				
+
 				});
 
             user.hasRole('ADMIN')
-            
+
 				.then(function(u) {
-			
+
 					count++;
 					assert.ok(true);
 				})
-			
+
 				.catch(function(err) {
-				
+
 					assert.ok(false);
 				})
-			
+
 				.done(function() {
-				
+
 					assert.equal(count, 2);
 				});
 
         });
 
     });
-    
-    describe('#login', function() {
-    	
-    	it('Should validate user using username and password', function(done) {
-    		
-    		var user = new User();
-    		
-    		user.login('someone@onthe.net', 'test1234')
-    		
-				.then(function(u) {
-				
-    			    assert.equal(u.username, 'someone@onthe.net');
-    				return u.hasRole('USER');
-    			})
-    			
-    			.then(function(u) {
-    			
-    				return u.getToken();
-    			})
-    			
-    			.then(function(u) {
 
+    describe('#login', function() {
+
+    	it('Should validate user using username and password', function(done) {
+
+    		User.login('someone@onthe.net', 'test1234')
+
+    			.then(function(u) {
+                    assert.equal(u.username, 'someone@onthe.net');
+                    assert.ok(bcrypt.compareSync('test1234', u.password));
+                    assert.equal(u.roles[0], 'USER');
     				done();
     			})
-    			
+
     			.catch(done);
     	});
-    	
+
     	it('Should validate user using username and password but reject due to role', function(done) {
-    		
-    		var user = new User();
-    		
-    		user.login('someone@onthe.net', 'test1234')
-    		
+
+    		User.login('someone@onthe.net', 'test1234')
+
 				.then(function(u) {
-				
+
     			    assert.equal(u.username, 'someone@onthe.net');
     				return u.hasRole('ADMIN');
     			})
-    			
+
     			.then(function(u) {
-    			
+
     				assert.ok(false);
     			})
-    			
+
     			.catch(function(err) {
 
-    				assert.ok(err)
-    				
+    				assert.ok(err);
+
     			})
-    			
-    			.done(done);
-    	});    	
-    	
-    });
-    
-    describe('#getToken', function() {
-    	
-    	it('Should throw an error if we attempt to get a token for an unsaved user', function(done) {
-    	
-    		var user = new User({username: 'another@test.com', passowrd: '123456', roles: ['USER']})
-    		
-    		user.getToken()
-    		
-    			.then(done)
-    			
-    			.catch(function(err) {
-    				
-    				assert.equal(err.message, 'No user to tokenize');
-    				
-    			})
-    			
+
     			.done(done);
     	});
-    	
-    	it('Should ');
+
+    });
+
+    describe('#getToken', function() {
+
+    	it('Should throw an error if we attempt to get a token for an unsaved user', function(done) {
+
+    		var user = new User({username: 'another@test.com', passowrd: '123456', roles: ['USER']});
+
+    		user.getToken()
+
+    			.then(done)
+
+    			.catch(function(err) {
+
+    				assert.equal(err.message, 'No user to tokenize');
+
+    			})
+
+    			.done(done);
+    	});
+
+    	//it('Should ');
     });
 
 });

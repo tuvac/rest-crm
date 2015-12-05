@@ -2,13 +2,18 @@ var mongoose = require('mongoose'),
     bcrypt = require('bcrypt'),
     salt = bcrypt.genSaltSync(10),
     jwt = require('jsonwebtoken'),
+    Promise = require('bluebird'),
     Schema = mongoose.Schema;
 
-mongoose.Promise = require('bluebird');
-mongoose.Promise.ES6.promisify(jwt.verify);
+mongoose.Promise = Promise;
+Promise.promisify(jwt.verify);
 
+/**
+ * @module User
+ */
 var UserSchema = new Schema({
 
+    /** @prop {string} username - the username **/
     username: {
         type: String,
         required: true,
@@ -17,18 +22,23 @@ var UserSchema = new Schema({
         }
     },
 
+    /** @prop {string[]} roles - the users system roles **/
     roles: [String],
 
+
+    /** @prop {string} password - the users password hash **/
     password: {
         type: String,
         required: true
     },
 
+    /** @prop {Date} created - the created date **/
     created: {
         type: Date,
         default: Date.now
     },
 
+    /** @prop {Date} updated - the last update date **/
     updated: {
         type: Date,
         default: Date.now
@@ -48,14 +58,22 @@ UserSchema.pre('save', function(next) {
     next();
 });
 
-UserSchema.methods.login = mongoose.Promise.ES6.method(function(username, password) {
+/**
+ * User login
+ * @function login
+ * @memberof module:User
+ * @param {string} username - the username
+ * @param {string} password - the password
+ * @return {Promise<User>}
+ */
+UserSchema.statics.login = Promise.method(function(username, password) {
 
     if (!password) {
 
         throw new Error('No password was provided');
     }
 
-    return this.model('User').findOne({
+    return this.findOne({
             username: RegExp(username, 'i')
         })
         .exec()
@@ -80,7 +98,7 @@ UserSchema.methods.login = mongoose.Promise.ES6.method(function(username, passwo
         });
 });
 
-UserSchema.methods.authenticate = mongoose.Promise.ES6.method(function(token) {
+UserSchema.methods.authenticate = Promise.method(function(token) {
 
     if (!token) {
 
@@ -88,11 +106,16 @@ UserSchema.methods.authenticate = mongoose.Promise.ES6.method(function(token) {
     }
 
     return jwt.verify(token, 'secret-key');
-
-
 });
 
-UserSchema.methods.getToken = mongoose.Promise.ES6.method(function() {
+/**
+ * Create a JWT user token
+ * @function getToken
+ * @memberof module:User
+ * @instance
+ * @return {string} - the encoded user token
+ */
+UserSchema.methods.getToken = Promise.method(function() {
 
     if (this.isNew) {
 
@@ -106,15 +129,38 @@ UserSchema.methods.getToken = mongoose.Promise.ES6.method(function() {
     return token;
 });
 
-UserSchema.methods.register = function(username, password, roles) {
+/**
+ * User register
+ * @function register
+ * @memberof module:User
+ * @instance
+ * @param {string[]} roles - an array of user roles
+ * @return {Promise<User>}
+ */
+UserSchema.methods.register = function(roles) {
 
-    this.username = username;
-    this.password = bcrypt.hashSync(password, salt);
-    !roles ? this.roles.push('USER') : this.roles = this.roles.concat(roles);
+    this.password = bcrypt.hashSync(this.password, salt);
+
+    if (!roles) {
+
+        this.roles.push('USER');
+
+    } else {
+
+        this.roles = this.roles.concat(roles);
+    }
     return this.save();
 };
 
-UserSchema.methods.hasRole = mongoose.Promise.ES6.method(function(role) {
+/**
+ * Check if user has supplied role
+ * @function hasRole
+ * @memberof module:User
+ * @instance
+ * @param {string} role - a role to test for
+ * @return {Promise<User>}
+ */
+UserSchema.methods.hasRole = Promise.method(function(role) {
 
     if (this.roles.indexOf(role) >= 0) {
         return this;
@@ -123,6 +169,13 @@ UserSchema.methods.hasRole = mongoose.Promise.ES6.method(function(role) {
 
 });
 
+/**
+ * Return user object as JSON string
+ * @function toJSON
+ * @memberof module:User
+ * @instance
+ * @return {string}
+ */
 UserSchema.methods.toJSON = function() {
 
     var obj = this.toObject();

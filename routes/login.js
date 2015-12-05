@@ -4,7 +4,7 @@ var express = require('express'),
 
 router.post('/', function(req, res, next) {
 
-  
+
 
     var user = new User(),
     	data = req.body;
@@ -31,7 +31,7 @@ router.post('/', function(req, res, next) {
         res.json({
             success: true,
             token: token
-        })
+        });
     })
 
     .catch(function(err) {

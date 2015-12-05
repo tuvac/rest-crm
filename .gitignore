@@ -30,5 +30,6 @@ node_modules
 *.sqlite
 public/tmp/*
 
-nohup.out
+docs/*
 
+nohup.out
