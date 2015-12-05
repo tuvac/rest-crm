@@ -98,6 +98,14 @@ UserSchema.statics.login = Promise.method(function(username, password) {
         });
 });
 
+/**
+ * Vaidate user against the JWT token
+ * @function authenticate
+ * @memberof module:User
+ * @instance
+ * @param {string} token - the JWT token
+ * @return {Promise<User>} - the user
+ */
 UserSchema.methods.authenticate = Promise.method(function(token) {
 
     if (!token) {
