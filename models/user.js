@@ -6,7 +6,7 @@ var mongoose = require('mongoose'),
     Schema = mongoose.Schema;
 
 mongoose.Promise = Promise;
-Promise.promisify(jwt.verify);
+//Promise.promisify(jwt.verify);
 
 /**
  * @module User
@@ -32,6 +32,11 @@ var UserSchema = new Schema({
         required: true
     },
 
+    enabled: {
+        type: Boolean,
+        default: true
+    },
+
     /** @prop {Date} created - the created date **/
     created: {
         type: Date,
@@ -46,7 +51,7 @@ var UserSchema = new Schema({
 
 });
 
-UserSchema.pre('save', function(next) {
+UserSchema.pre('save', function (next) {
 
     var cd = new Date();
     this.updated = cd;
@@ -66,7 +71,7 @@ UserSchema.pre('save', function(next) {
  * @param {string} password - the password
  * @return {Promise<User>}
  */
-UserSchema.statics.login = Promise.method(function(username, password) {
+UserSchema.statics.login = Promise.method(function (username, password) {
 
     if (!password) {
 
@@ -77,7 +82,7 @@ UserSchema.statics.login = Promise.method(function(username, password) {
             username: RegExp(username, 'i')
         })
         .exec()
-        .then(function(user) {
+        .then(function (user) {
 
             if (!user) {
 
@@ -92,7 +97,7 @@ UserSchema.statics.login = Promise.method(function(username, password) {
             throw new Error('Password is invalid');
 
         })
-        .catch(function(err) {
+        .catch(function (err) {
 
             throw new Error(err);
         });
@@ -106,14 +111,30 @@ UserSchema.statics.login = Promise.method(function(username, password) {
  * @param {string} token - the JWT token
  * @return {Promise<User>} - the user
  */
-UserSchema.methods.authenticate = Promise.method(function(token) {
+UserSchema.methods.authenticate = Promise.method(function (token) {
 
     if (!token) {
 
         throw new Error('No token supplied');
     }
 
-    return jwt.verify(token, 'secret-key');
+    var user = jwt.verify(token, 'secret-key');
+
+    return this.model('User').findOne({
+            '_id': user._id,
+            'enabled': true
+        })
+        .exec()
+        .then(function (user) {
+
+            if (user) {
+
+                return user;
+            }
+
+            throw new Error('Inactive user');
+        });
+
 });
 
 /**
@@ -123,7 +144,7 @@ UserSchema.methods.authenticate = Promise.method(function(token) {
  * @instance
  * @return {string} - the encoded user token
  */
-UserSchema.methods.createToken = Promise.method(function() {
+UserSchema.methods.createToken = Promise.method(function () {
 
     if (this.isNew) {
 
@@ -145,7 +166,7 @@ UserSchema.methods.createToken = Promise.method(function() {
  * @param {string[]} roles - an array of user roles
  * @return {Promise<User>}
  */
-UserSchema.methods.register = function(roles) {
+UserSchema.methods.register = function (roles) {
 
     this.password = bcrypt.hashSync(this.password, salt);
 
@@ -168,7 +189,7 @@ UserSchema.methods.register = function(roles) {
  * @param {string} role - a role to test for
  * @return {Promise<User>}
  */
-UserSchema.methods.hasRole = Promise.method(function(role) {
+UserSchema.methods.hasRole = Promise.method(function (role) {
 
     if (this.roles.indexOf(role) >= 0) {
         return this;
@@ -184,7 +205,7 @@ UserSchema.methods.hasRole = Promise.method(function(role) {
  * @instance
  * @return {string}
  */
-UserSchema.methods.toJSON = function() {
+UserSchema.methods.toJSON = function () {
 
     var obj = this.toObject();
     delete obj.password;
