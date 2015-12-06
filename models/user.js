@@ -32,6 +32,7 @@ var UserSchema = new Schema({
         required: true
     },
 
+    /** @prop {boolean} enabled - the enabled user flag **/
     enabled: {
         type: Boolean,
         default: true
@@ -79,28 +80,48 @@ UserSchema.statics.login = Promise.method(function (username, password) {
     }
 
     return this.findOne({
-            username: RegExp(username, 'i')
-        })
-        .exec()
-        .then(function (user) {
+        username: RegExp(username, 'i')
+    })
 
-            if (!user) {
+    .exec()
 
-                throw new Error('No user found');
-            }
+    .then(function (user) {
 
-            if (bcrypt.compareSync(password, user.password)) {
+        if (!user) {
 
-                return user;
-            }
+            throw new Error('No user found');
+        }
 
-            throw new Error('Password is invalid');
+        if (bcrypt.compareSync(password, user.password)) {
 
-        })
-        .catch(function (err) {
+            return user;
+        }
 
-            throw new Error(err);
+        throw new Error('Password is invalid');
+
+    })
+
+    .catch(function (err) {
+
+        throw new Error(err);
+    });
+});
+
+/**
+ * Request web token
+ * @function requestToken
+ * @memberof module:User
+ * @param {string} username - the username
+ * @param {string} password - the password
+ * @return {Promise<String>}
+ */
+UserSchema.statics.requestToken = Promise.method(function (username, password) {
+
+    return this.login(username, password)
+        .then(function (u) {
+            return u.createToken();
         });
+
 });
 
 /**
@@ -121,19 +142,21 @@ UserSchema.methods.authenticate = Promise.method(function (token) {
     var user = jwt.verify(token, 'secret-key');
 
     return this.model('User').findOne({
-            '_id': user._id,
-            'enabled': true
-        })
-        .exec()
-        .then(function (user) {
+        '_id': user._id,
+        'enabled': true
+    })
 
-            if (user) {
+    .exec()
 
-                return user;
-            }
+    .then(function (user) {
 
-            throw new Error('Inactive user');
-        });
+        if (user) {
+
+            return user;
+        }
+
+        throw new Error('Inactive user');
+    });
 
 });
 
