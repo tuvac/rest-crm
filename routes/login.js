@@ -6,8 +6,7 @@ router.post('/', function(req, res, next) {
 
 
 
-    var user = new User(),
-    	data = req.body;
+    var data = req.body;
 
     if (!data || !data.username || !data.password) {
 
@@ -18,13 +17,7 @@ router.post('/', function(req, res, next) {
         return;
     }
 
-    user.login(data.username, data.password)
-
-    .then(function(user) {
-
-        console.log('Found user ' + user.id + ' : ' + user.username);
-        return user.getToken();
-    })
+    User.requestToken(data.username, data.password)
 
     .then(function(token) {
 

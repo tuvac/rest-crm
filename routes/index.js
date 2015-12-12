@@ -17,18 +17,18 @@ router.use(function(req, res, next) {
 
 	 		.then(function(decoded) {
 
-	 			req.decoded = decoded
+	 			req.decoded = decoded;
 	 			next();
 	 		})
 
 	 		.catch(function(err) {
-				
+
 				return res.status(403).json({
 					success: false,
 					message: err.message
 				});
 
-	 		})
+	 		});
 
 	 } else {
 

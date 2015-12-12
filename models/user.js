@@ -74,10 +74,7 @@ UserSchema.pre('save', function (next) {
  */
 UserSchema.statics.login = Promise.method(function (username, password) {
 
-    if (!password) {
-
-        throw new Error('No password was provided');
-    }
+    if (!password) throw new Error('No password was provided');
 
     return this.findOne({
         username: RegExp(username, 'i')
@@ -87,10 +84,7 @@ UserSchema.statics.login = Promise.method(function (username, password) {
 
     .then(function (user) {
 
-        if (!user) {
-
-            throw new Error('No user found');
-        }
+        if (!user) throw new Error('No user found');
 
         if (bcrypt.compareSync(password, user.password)) {
 
@@ -134,10 +128,7 @@ UserSchema.statics.requestToken = Promise.method(function (username, password) {
  */
 UserSchema.methods.authenticate = Promise.method(function (token) {
 
-    if (!token) {
-
-        throw new Error('No token supplied');
-    }
+    if (!token) throw new Error('No token supplied');
 
     var user = jwt.verify(token, 'secret-key');
 
@@ -150,10 +141,7 @@ UserSchema.methods.authenticate = Promise.method(function (token) {
 
     .then(function (user) {
 
-        if (user) {
-
-            return user;
-        }
+        if (user) return user;
 
         throw new Error('Inactive user');
     });
@@ -169,10 +157,7 @@ UserSchema.methods.authenticate = Promise.method(function (token) {
  */
 UserSchema.methods.createToken = Promise.method(function () {
 
-    if (this.isNew) {
-
-        throw new Error('No user to tokenize');
-    }
+    if (this.isNew) throw new Error('No user to tokenize');
 
     var token = jwt.sign(this, 'secret-key', {
         expiresIn: 86400 // expires in 24 hours
@@ -190,7 +175,7 @@ UserSchema.methods.createToken = Promise.method(function () {
  * @return {Promise<User>}
  */
 UserSchema.methods.register = function (roles) {
-
+    console.log(this.password);
     this.password = bcrypt.hashSync(this.password, salt);
 
     if (!roles) {
@@ -215,6 +200,7 @@ UserSchema.methods.register = function (roles) {
 UserSchema.methods.hasRole = Promise.method(function (role) {
 
     if (this.roles.indexOf(role) >= 0) {
+
         return this;
     }
     throw new Error('User does not have permission');

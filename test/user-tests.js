@@ -286,7 +286,7 @@ describe('User', function () {
     describe('#requestToken', function() {
 
         it('Should create a toekn for a given valid username and password', function(done) {
-
+            
             User.requestToken('someone@onthe.net', 'test1234')
                 .then(function(token) {
 
